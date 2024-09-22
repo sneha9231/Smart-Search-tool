@@ -4,7 +4,7 @@ import pandas as pd
 import gradio as gr
 from groq import Groq
 
-#Scrape the free courses from Analytics Vidhya
+# Step 1: Scrape the free courses from Analytics Vidhya
 url = "https://courses.analyticsvidhya.com/pages/all-free-courses"
 response = requests.get(url)
 soup = BeautifulSoup(response.content, 'html.parser')
@@ -31,7 +31,7 @@ for course_card in soup.find_all('header', class_='course-card__img-container'):
                 'course_link': course_link
             })
 
-#Create DataFrame
+# Step 2: Create DataFrame
 df = pd.DataFrame(courses)
 
 client.api_key = "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"
@@ -94,7 +94,7 @@ def search_courses(query):
                         print(f"Warning: Course not found in database: {title}")
 
         print(f"Number of results found: {len(results)}")
-        return sorted(results, key=lambda x: x['score'], reverse=True)[:5]  # Return top 5 results
+        return sorted(results, key=lambda x: x['score'], reverse=True)[:10]  # Return top 10 results
 
     except Exception as e:
         print(f"An error occurred in search_courses: {str(e)}")
@@ -104,29 +104,109 @@ def gradio_search(query):
     result_list = search_courses(query)
     
     if result_list:
-        html_output = ""
+        html_output = '<div class="results-container">'
         for item in result_list:
             course_title = item['title']
             course_image = item['image_url']
             course_link = item['course_link']
+            relevance_score = round(item['score'] * 100, 2)
             
             html_output += f'''
-            <div style="margin-bottom: 20px;">
-                <img src="{course_image}" alt="{course_title}" style="width:200px;"/><br>
-                <a href="{course_link}" target="_blank">{course_title}</a>
+            <div class="course-card">
+                <img src="{course_image}" alt="{course_title}" class="course-image"/>
+                <div class="course-info">
+                    <h3>{course_title}</h3>
+                    <p>Relevance: {relevance_score}%</p>
+                    <a href="{course_link}" target="_blank" class="course-link">View Course</a>
+                </div>
             </div>'''
+        html_output += '</div>'
         return html_output
     else:
-        return "<p>No results found. Please try a different query.</p>"
+        return '<p class="no-results">No results found. Please try a different query.</p>'
+
+# Custom CSS for the Gradio interface
+custom_css = """
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+}
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.results-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.course-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+    width: 48%;
+    transition: transform 0.2s;
+}
+.course-card:hover {
+    transform: translateY(-5px);
+}
+.course-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+.course-info {
+    padding: 15px;
+}
+.course-info h3 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #333;
+}
+.course-info p {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+.course-link {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 8px 12px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+.course-link:hover {
+    background-color: #0056b3;
+}
+.no-results {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+"""
 
 # Gradio interface
 iface = gr.Interface(
     fn=gradio_search,
-    inputs=gr.Textbox(label="Enter your query"),
+    inputs=gr.Textbox(label="Enter your search query", placeholder="e.g., machine learning, data science, python"),
     outputs=gr.HTML(label="Search Results"),
-    title="Analytics Vidhya Smart Search"
+    title="Analytics Vidhya Smart Course Search",
+    description="Find the most relevant courses from Analytics Vidhya based on your query.",
+    theme="huggingface",
+    css=custom_css,
+    examples=[
+        ["machine learning for beginners"],
+        ["advanced data visualization techniques"],
+        ["python programming basics"], 
+        ["Business Analytics"]
+    ],
 )
 
 if __name__ == "__main__":
-    print("Starting Gradio interface...")
     iface.launch()
