@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import gradio as gr
 from groq import Groq
+import creds
 
 # Step 1: Scrape the free courses from Analytics Vidhya
 url = "https://courses.analyticsvidhya.com/pages/all-free-courses"
@@ -34,8 +35,8 @@ for course_card in soup.find_all('header', class_='course-card__img-container'):
 # Step 2: Create DataFrame
 df = pd.DataFrame(courses)
 
-import os
-api_key = os.getenv('API_KEY')
+
+client = Groq(creds.api_key)
 
 def search_courses(query):
     try:
