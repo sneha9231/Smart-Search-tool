@@ -34,7 +34,8 @@ for course_card in soup.find_all('header', class_='course-card__img-container'):
 # Step 2: Create DataFrame
 df = pd.DataFrame(courses)
 
-client.api_key = "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"
+import os
+api_key = os.getenv('API_KEY')
 
 def search_courses(query):
     try:
